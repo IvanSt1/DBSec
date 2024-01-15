@@ -104,8 +104,14 @@ CREATE ROLE report_viewer;
 ```
 Выдача прав для ролей:
 ```
+GRANT USAGE ON SCHEMA inventory TO inventory_manager;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA inventory TO inventory_manager;
+
+GRANT USAGE ON SCHEMA sales TO sales_manager;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA sales TO sales_manager;
+
+GRANT USAGE ON SCHEMA inventory TO report_viewer;
+GRANT USAGE ON SCHEMA sales TO report_viewer;
 GRANT SELECT ON ALL TABLES IN SCHEMA inventory TO report_viewer;
 GRANT SELECT ON ALL TABLES IN SCHEMA sales TO report_viewer;
 
@@ -185,3 +191,29 @@ ORDER BY grantee;
 (24 rows)
 
 ```
+## Попробовать подключиться от лица каждой роли (из тех, которым разрешено подключение к серверу БД). Убедиться, что роль имеет доступ к разрешённым данным и не имеет доступа ко всем остальным.
+```
+bookstore=# SET ROLE inventory_manager;
+SET
+bookstore=> SELECT * FROM inventory.suppliers;
+ id | name | contact_info 
+----+------+--------------
+(0 rows)
+
+bookstore=> SELECT * FROM inventory.books;
+ id | title | author | isbn | price | quantity 
+----+-------+--------+------+-------+----------
+(0 rows)
+
+bookstore=> SELECT * FROM sales.customers;
+ERROR:  permission denied for schema sales
+LINE 1: SELECT * FROM sales.customers;
+                      ^
+bookstore=> SELECT * FROM sales.orders;
+ERROR:  permission denied for schema sales
+LINE 1: SELECT * FROM sales.orders;
+                      ^
+```
+
+### Результаты:
+В результате данной лабораторной работы было произведено ознакомление со схемами и ролями в PostgreSQL. Для тестовой базы данных магазина книг были созданы схема и несколько ролей, которым были выданы необходимые привилегии для работы с определенными таблицами.
