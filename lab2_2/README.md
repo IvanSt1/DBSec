@@ -105,4 +105,38 @@ bookstore=# SELECT * FROM inventory.books;
   3 | Another Book | Author B | 0987654321 | 19.99 |        5
 (2 rows)
 ```
-REPEATABLE READ в сесси2 аидит данные только в состояние в котором они были перед началом транзакции, поэтому только после COMMIT данные добавленные во второй сессии появились в первой сессии.
+REPEATABLE READ в сесси 2 видит данные только в состояние в котором они были перед началом транзакции, поэтому только после COMMIT данные добавленные во второй сессии появились в первой сессии.
+## SERIALIZABLE:
+сесси1:
+```
+bookstore=# START TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION
+bookstore=*# UPDATE inventory.books SET price = price + 1 WHERE id = 2;
+UPDATE 1
+bookstore=*# SELECT * FROM inventory.books;
+ id |    title     |  author  |    isbn    | price | quantity 
+----+--------------+----------+------------+-------+----------
+  3 | Another Book | Author B | 0987654321 | 19.99 |        5
+  4 | Third Book   | Author C | 1122334455 | 30.00 |        8
+  2 | New Book     | Author A | 1234567890 | 26.99 |       10
+(3 rows)
+```
+Сессия 2:
+```
+bookstore=# START TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+START TRANSACTION
+bookstore=*# UPDATE inventory.books SET price = price + 2 WHERE id = 2;
+UPDATE 1
+ERROR:  could not serialize access due to concurrent update
+```
+SERIALIZABLE не дает возможности вносить изменения одновременно в одну и туже запись в разных сессиях.
+## Результаты:
+1. READ COMMITTED:
+ + Новые данные, добавленные в другой транзакции, становятся видны после их фиксации.
+ + В Сессии 2 данные, добавленные в Сессии 1, становятся видны только после COMMIT в Сессии 1.
+2. REPEATABLE READ:
+ + Гарантирует стабильность прочитанных данных на протяжении всей транзакции.
+ + В Сессии 1 данные, добавленные в Сессии 2, не отображаются до завершения транзакции в Сессии 1.
+3. SERIALIZABLE:
+ + Обеспечивает строгую последовательность выполнения транзакций.
+ + Конфликты между параллельными транзакциями могут привести к откату одной из них.
